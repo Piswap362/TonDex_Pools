@@ -1,0 +1,1035 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TON DEX - Liquidity Pools</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <style>
+        :root {
+            --primary-dark: #006D77;
+            --primary-medium: #1A6E7A;
+            --primary-light: #83C5BE;
+            --accent-color: #FFDDD2;
+            --text-light: #FFFFFF;
+            --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            --transition: all 0.3s ease;
+            --success-color: #4CAF50;
+            --warning-color: #FFC107;
+            --error-color: #FF5252;
+            --gradient-primary: linear-gradient(135deg, var(--primary-light) 0%, var(--accent-color) 100%);
+            --gradient-dark: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary-medium) 100%);
+        }
+        
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: var(--primary-dark);
+            color: var(--text-light);
+            overflow-x: hidden;
+        }
+        
+        .scroll-container {
+            max-width: 400px;
+            margin: 0 auto;
+            padding: 20px;
+            padding-bottom: 100px;
+            min-height: 100vh;
+            box-sizing: border-box;
+        }
+        
+        .back-button {
+            display: inline-block;
+            padding: 10px 15px;
+            background-color: var(--primary-light);
+            color: var(--primary-dark);
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            margin-bottom: 20px;
+            transition: var(--transition);
+        }
+        
+        .back-button:hover {
+            background-color: var(--accent-color);
+            transform: translateY(-2px);
+        }
+        
+        .launch-notification {
+            background-color: var(--accent-color);
+            color: var(--primary-dark);
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            text-align: center;
+            font-weight: 600;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+            100% { transform: scale(1); }
+        }
+        
+        .dex-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .dex-title {
+            font-size: 24px;
+            font-weight: 600;
+            color: var(--accent-color);
+        }
+        
+        .pool-tabs {
+            display: flex;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 5px;
+            margin-bottom: 20px;
+        }
+        
+        .pool-tab {
+            background: none;
+            border: none;
+            color: var(--text-light);
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: var(--transition);
+            flex: 1;
+            text-align: center;
+        }
+        
+        .pool-tab.active {
+            background: var(--primary-light);
+            color: var(--primary-dark);
+            font-weight: 600;
+        }
+        
+        /* Pool Card */
+        .pool-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            padding: 15px;
+            margin-bottom: 15px;
+            border: 1px solid rgba(131, 197, 190, 0.2);
+            transition: var(--transition);
+        }
+        
+        .pool-card:hover {
+            border-color: rgba(131, 197, 190, 0.4);
+            transform: translateY(-3px);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+        }
+        
+        .pool-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .pool-tokens {
+            display: flex;
+            align-items: center;
+        }
+        
+        .pool-token-icon {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: var(--primary-light);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            margin-right: -8px;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .pool-token-icon:last-child {
+            margin-right: 10px;
+            z-index: 0;
+        }
+        
+        .pool-name {
+            font-weight: 600;
+        }
+        
+        .pool-apy {
+            background: rgba(75, 181, 67, 0.2);
+            color: var(--success-color);
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        
+        .pool-details {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .pool-detail {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 12px;
+        }
+        
+        .pool-detail-label {
+            font-size: 12px;
+            opacity: 0.8;
+            margin-bottom: 5px;
+        }
+        
+        .pool-detail-value {
+            font-weight: 600;
+        }
+        
+        .pool-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .pool-action-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            border-radius: 12px;
+            padding: 12px;
+            color: var(--text-light);
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+        }
+        
+        .pool-action-btn.primary {
+            background: var(--gradient-primary);
+            color: var(--primary-dark);
+        }
+        
+        .pool-action-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        /* Button Links Section */
+        .button-links {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin: 20px 0;
+        }
+        
+        .link-button {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(131, 197, 190, 0.3);
+            border-radius: 12px;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-decoration: none;
+            color: var(--text-light);
+            transition: var(--transition);
+        }
+        
+        .link-button:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-3px);
+        }
+        
+        .link-button i {
+            font-size: 20px;
+            margin-bottom: 8px;
+            color: var(--accent-color);
+        }
+        
+        .link-button span {
+            font-size: 14px;
+            text-align: center;
+        }
+        
+        /* Create Pool Card */
+        .create-pool-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 1px dashed rgba(131, 197, 190, 0.4);
+            text-align: center;
+            transition: var(--transition);
+        }
+        
+        .create-pool-card:hover {
+            border-color: var(--accent-color);
+            background: rgba(255, 255, 255, 0.08);
+        }
+        
+        .create-pool-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: rgba(131, 197, 190, 0.1);
+            margin: 0 auto 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: var(--accent-color);
+        }
+        
+        .create-pool-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: var(--accent-color);
+        }
+        
+        .create-pool-desc {
+            font-size: 14px;
+            opacity: 0.8;
+            margin-bottom: 15px;
+        }
+        
+        .create-pool-btn {
+            background: var(--gradient-primary);
+            color: var(--primary-dark);
+            border: none;
+            border-radius: 12px;
+            padding: 12px;
+            font-weight: 600;
+            width: 100%;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        
+        .create-pool-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+        }
+        
+        /* Bottom Menu */
+        .bottom-menu {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(0, 109, 119, 0.9);
+            display: flex;
+            justify-content: space-around;
+            padding: 15px 0;
+            backdrop-filter: blur(10px);
+            border-top: 1px solid rgba(131, 197, 190, 0.3);
+            z-index: 1000;
+            max-width: 400px;
+            margin: 0 auto;
+            box-sizing: border-box;
+        }
+        
+        .menu-btn {
+            background: none;
+            border: none;
+            color: var(--text-light);
+            font-size: 16px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            flex-direction: column;
+            gap: 5px;
+            text-decoration: none;
+            position: relative;
+            padding: 8px 12px;
+            border-radius: 8px;
+            transition: var(--transition);
+            opacity: 0.7;
+            flex: 1;
+        }
+        
+        .menu-btn:hover {
+            opacity: 1;
+            background: rgba(131, 197, 190, 0.1);
+        }
+        
+        .menu-btn i {
+            font-size: 20px;
+        }
+        
+        .menu-btn.active {
+            opacity: 1;
+            font-weight: 600;
+        }
+        
+        .menu-btn.active::after {
+            content: "";
+            position: absolute;
+            bottom: -8px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 30px;
+            height: 3px;
+            background-color: var(--accent-color);
+            border-radius: 3px;
+        }
+        
+        /* Enhanced Modal Styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(5px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+        
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .modal-container {
+            background: var(--primary-dark);
+            border-radius: 20px;
+            width: 90%;
+            max-width: 400px;
+            max-height: 90vh;
+            overflow-y: auto;
+            border: 1px solid var(--primary-light);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            transform: translateY(20px);
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        
+        .modal-overlay.active .modal-container {
+            transform: translateY(0);
+        }
+        
+        .modal-header {
+            padding: 20px;
+            border-bottom: 1px solid rgba(131, 197, 190, 0.2);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .modal-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--accent-color);
+            margin: 0;
+        }
+        
+        .close-modal {
+            background: none;
+            border: none;
+            color: var(--text-light);
+            font-size: 24px;
+            cursor: pointer;
+            transition: var(--transition);
+            opacity: 0.7;
+        }
+        
+        .close-modal:hover {
+            opacity: 1;
+            transform: rotate(90deg);
+        }
+        
+        .modal-body {
+            padding: 20px;
+        }
+        
+        .modal-footer {
+            padding: 15px 20px;
+            border-top: 1px solid rgba(131, 197, 190, 0.2);
+            display: flex;
+            gap: 10px;
+        }
+        
+        .modal-btn {
+            flex: 1;
+            padding: 12px;
+            border-radius: 12px;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        
+        .modal-btn-primary {
+            background: var(--gradient-primary);
+            color: var(--primary-dark);
+        }
+        
+        .modal-btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-light);
+        }
+        
+        .modal-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        /* Add Liquidity Modal Specific Styles */
+        .token-selector {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .token-selector-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+        
+        .token-selector-label {
+            font-size: 14px;
+            opacity: 0.8;
+        }
+        
+        .token-balance {
+            font-size: 12px;
+            color: var(--primary-light);
+        }
+        
+        .token-selector-body {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .token-amount {
+            font-size: 18px;
+            font-weight: 600;
+            background: none;
+            border: none;
+            color: var(--text-light);
+            width: 60%;
+        }
+        
+        .token-amount:focus {
+            outline: none;
+        }
+        
+        .token-select {
+            display: flex;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 8px 12px;
+            border-radius: 12px;
+            cursor: pointer;
+        }
+        
+        .token-icon {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: var(--primary-light);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 8px;
+            font-size: 12px;
+            color: var(--primary-dark);
+        }
+        
+        .token-name {
+            font-weight: 600;
+            margin-right: 8px;
+        }
+        
+        /* Pool Info Section */
+        .pool-info {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        
+        .pool-info-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+        
+        .pool-info-row:last-child {
+            margin-bottom: 0;
+        }
+        
+        .pool-info-label {
+            opacity: 0.7;
+        }
+        
+        /* Responsive adjustments */
+        @media (max-width: 350px) {
+            .pool-actions {
+                grid-template-columns: 1fr;
+            }
+            
+            .button-links {
+                grid-template-columns: 1fr;
+            }
+            
+            .modal-footer {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="scroll-container">
+        <a href="https://piswap362.github.io/TonDex_Home/" class="back-button">
+            <i class="fas fa-arrow-left"></i> Back
+        </a>
+        
+        <div class="launch-notification">
+            🚀 Coming Soon: Yield farming features will be available soon!
+        </div>
+
+        <div class="dex-header">
+            <h1 class="dex-title">Liquidity Pools</h1>
+            <div>
+                <i class="fas fa-info-circle" style="color: var(--accent-color); font-size: 20px;"></i>
+            </div>
+        </div>
+        
+        <div class="pool-tabs">
+            <button class="pool-tab active">All Pools</button>
+            <button class="pool-tab">Your Pools</button>
+            <button class="pool-tab">Top APY</button>
+        </div>
+        
+        <!-- Pool Cards -->
+        <div class="pool-card">
+            <div class="pool-header">
+                <div class="pool-tokens">
+                    <div class="pool-token-icon">TON</div>
+                    <div class="pool-token-icon">USDT</div>
+                    <div class="pool-name">TON-USDT</div>
+                </div>
+                <div class="pool-apy">24.5% APY</div>
+            </div>
+            
+            <div class="pool-details">
+                <div class="pool-detail">
+                    <div class="pool-detail-label">Total Liquidity</div>
+                    <div class="pool-detail-value">$1.2M</div>
+                </div>
+                <div class="pool-detail">
+                    <div class="pool-detail-label">Your Share</div>
+                    <div class="pool-detail-value">$0.00</div>
+                </div>
+                <div class="pool-detail">
+                    <div class="pool-detail-label">Volume (24h)</div>
+                    <div class="pool-detail-value">$245K</div>
+                </div>
+                <div class="pool-detail">
+                    <div class="pool-detail-label">Fees (24h)</div>
+                    <div class="pool-detail-value">$1,245</div>
+                </div>
+            </div>
+            
+            <div class="pool-actions">
+                <button class="pool-action-btn add-liquidity-btn">
+                    <i class="fas fa-plus"></i> Add
+                </button>
+                <button class="pool-action-btn primary earn-rewards-btn">
+                    <i class="fas fa-chart-line"></i> Earn
+                </button>
+            </div>
+        </div>
+        
+        <div class="pool-card">
+            <div class="pool-header">
+                <div class="pool-tokens">
+                    <div class="pool-token-icon">TON</div>
+                    <div class="pool-token-icon">TDX</div>
+                    <div class="pool-name">TON-TDX</div>
+                </div>
+                <div class="pool-apy">32.1% APY</div>
+            </div>
+            
+            <div class="pool-details">
+                <div class="pool-detail">
+                    <div class="pool-detail-label">Total Liquidity</div>
+                    <div class="pool-detail-value">$845K</div>
+                </div>
+                <div class="pool-detail">
+                    <div class="pool-detail-label">Your Share</div>
+                    <div class="pool-detail-value">$0.00</div>
+                </div>
+                <div class="pool-detail">
+                    <div class="pool-detail-label">Volume (24h)</div>
+                    <div class="pool-detail-value">$180K</div>
+                </div>
+                <div class="pool-detail">
+                    <div class="pool-detail-label">Fees (24h)</div>
+                    <div class="pool-detail-value">$920</div>
+                </div>
+            </div>
+            
+            <div class="pool-actions">
+                <button class="pool-action-btn add-liquidity-btn">
+                    <i class="fas fa-plus"></i> Add
+                </button>
+                <button class="pool-action-btn primary earn-rewards-btn">
+                    <i class="fas fa-chart-line"></i> Earn
+                </button>
+            </div>
+        </div>
+        
+        <!-- Create Pool Card -->
+        <div class="create-pool-card">
+            <div class="create-pool-icon">
+                <i class="fas fa-plus"></i>
+            </div>
+            <div class="create-pool-title">Create a Pool</div>
+            <div class="create-pool-desc">Become a liquidity provider and earn trading fees</div>
+            <button class="create-pool-btn" id="createPoolBtn">Create New Pool</button>
+        </div>
+        
+        <!-- Button Links Section -->
+        <div class="button-links">
+            <a href="#" class="link-button">
+                <i class="fas fa-water"></i>
+                <span>How Pools Work</span>
+            </a>
+            <a href="#" class="link-button">
+                <i class="fas fa-percentage"></i>
+                <span>Fee Structure</span>
+            </a>
+            <a href="#" class="link-button">
+                <i class="fas fa-lock"></i>
+                <span>Locked Pools</span>
+            </a>
+            <a href="#" class="link-button">
+                <i class="fas fa-history"></i>
+                <span>Your History</span>
+            </a>
+        </div>
+        
+        <div class="bottom-menu">
+            <a href="https://piswap362.github.io/TonDex_Swap/" class="menu-btn">
+                <i class="fas fa-exchange-alt"></i>
+                <span>Swap</span>
+            </a>
+            <a href="https://piswap362.github.io/Tondex_stats/" class="menu-btn">
+                <i class="fas fa-chart-line"></i>
+                <span>Stats</span>
+            </a>
+            <a href="#" class="menu-btn active">
+                <i class="fas fa-coins"></i>
+                <span>Pools</span>
+            </a>
+            <a href="#" class="menu-btn">
+                <i class="fas fa-user"></i>
+                <span>Profile</span>
+            </a>
+        </div>
+    </div>
+    
+    <!-- Add Liquidity Modal -->
+    <div class="modal-overlay" id="addLiquidityModal">
+        <div class="modal-container">
+            <div class="modal-header">
+                <h3 class="modal-title">Add Liquidity</h3>
+                <button class="close-modal" id="closeAddLiquidityModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="token-selector">
+                    <div class="token-selector-header">
+                        <span class="token-selector-label">Token 1</span>
+                        <span class="token-balance">Balance: 10.5 TON</span>
+                    </div>
+                    <div class="token-selector-body">
+                        <input type="number" class="token-amount" placeholder="0.0">
+                        <div class="token-select">
+                            <div class="token-icon">TON</div>
+                            <span class="token-name">TON</span>
+                            <i class="fas fa-chevron-down"></i>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="token-selector">
+                    <div class="token-selector-header">
+                        <span class="token-selector-label">Token 2</span>
+                        <span class="token-balance">Balance: 0.0</span>
+                    </div>
+                    <div class="token-selector-body">
+                        <input type="number" class="token-amount" placeholder="0.0">
+                        <div class="token-select">
+                            <div class="token-icon">USDT</div>
+                            <span class="token-name">USDT</span>
+                            <i class="fas fa-chevron-down"></i>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="pool-info">
+                    <div class="pool-info-row">
+                        <span class="pool-info-label">Exchange Rate</span>
+                        <span>1 TON = 2.15 USDT</span>
+                    </div>
+                    <div class="pool-info-row">
+                        <span class="pool-info-label">Share of Pool</span>
+                        <span>0%</span>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="modal-btn modal-btn-secondary" id="cancelAddLiquidity">Cancel</button>
+                <button class="modal-btn modal-btn-primary">Add Liquidity</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Earn Rewards Modal -->
+    <div class="modal-overlay" id="earnRewardsModal">
+        <div class="modal-container">
+            <div class="modal-header">
+                <h3 class="modal-title">Earn Rewards</h3>
+                <button class="close-modal" id="closeEarnRewardsModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="token-selector">
+                    <div class="token-selector-header">
+                        <span class="token-selector-label">Pool</span>
+                    </div>
+                    <div class="token-selector-body">
+                        <div style="width: 60%; font-weight: 600;">TON-USDT</div>
+                        <div class="pool-apy">24.5% APY</div>
+                    </div>
+                </div>
+                
+                <div class="token-selector">
+                    <div class="token-selector-header">
+                        <span class="token-selector-label">Amount to Stake</span>
+                        <span class="token-balance">Balance: 0 LP</span>
+                    </div>
+                    <div class="token-selector-body">
+                        <input type="number" class="token-amount" placeholder="0.0">
+                        <button class="token-select" style="min-width: 80px;">
+                            Max
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="pool-info">
+                    <div class="pool-info-row">
+                        <span class="pool-info-label">Your Share</span>
+                        <span>0%</span>
+                    </div>
+                    <div class="pool-info-row">
+                        <span class="pool-info-label">Estimated Rewards</span>
+                        <span>0 TDX/day</span>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="modal-btn modal-btn-secondary" id="cancelEarnRewards">Cancel</button>
+                <button class="modal-btn modal-btn-primary">Stake & Earn</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Create Pool Modal -->
+    <div class="modal-overlay" id="createPoolModal">
+        <div class="modal-container">
+            <div class="modal-header">
+                <h3 class="modal-title">Create Pool</h3>
+                <button class="close-modal" id="closeCreatePoolModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="token-selector">
+                    <div class="token-selector-header">
+                        <span class="token-selector-label">Token 1</span>
+                    </div>
+                    <div class="token-selector-body">
+                        <div style="width: 60%;">
+                            <input type="text" class="token-amount" placeholder="Select token">
+                        </div>
+                        <div class="token-select">
+                            <span class="token-name">Select</span>
+                            <i class="fas fa-chevron-down"></i>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="token-selector">
+                    <div class="token-selector-header">
+                        <span class="token-selector-label">Token 2</span>
+                    </div>
+                    <div class="token-selector-body">
+                        <div style="width: 60%;">
+                            <input type="text" class="token-amount" placeholder="Select token">
+                        </div>
+                        <div class="token-select">
+                            <span class="token-name">Select</span>
+                            <i class="fas fa-chevron-down"></i>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="token-selector">
+                    <div class="token-selector-header">
+                        <span class="token-selector-label">Fee Tier</span>
+                    </div>
+                    <div class="token-selector-body" style="justify-content: space-between;">
+                        <button class="token-select" style="flex: 1; margin-right: 5px;">
+                            0.05%
+                        </button>
+                        <button class="token-select" style="flex: 1; margin: 0 5px;">
+                            0.3%
+                        </button>
+                        <button class="token-select" style="flex: 1; margin-left: 5px; background: var(--primary-light); color: var(--primary-dark);">
+                            1%
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="pool-info">
+                    <div class="pool-info-row">
+                        <span class="pool-info-label">Initial Price</span>
+                        <span>1 TON = 2.15 USDT</span>
+                    </div>
+                    <div class="pool-info-row">
+                        <span class="pool-info-label">Initial Deposit</span>
+                        <span>1000 TON + 2150 USDT</span>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="modal-btn modal-btn-secondary" id="cancelCreatePool">Cancel</button>
+                <button class="modal-btn modal-btn-primary">Create Pool</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Tab switching functionality
+        const poolTabs = document.querySelectorAll('.pool-tab');
+        poolTabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                poolTabs.forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                
+                // Here you would typically filter pools based on the selected tab
+                console.log(`Selected tab: ${tab.textContent}`);
+            });
+        });
+        
+        // Modal functionality
+        const addLiquidityModal = document.getElementById('addLiquidityModal');
+        const earnRewardsModal = document.getElementById('earnRewardsModal');
+        const createPoolModal = document.getElementById('createPoolModal');
+        
+        // Add Liquidity buttons
+        const addLiquidityBtns = document.querySelectorAll('.add-liquidity-btn');
+        addLiquidityBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const poolName = btn.closest('.pool-card').querySelector('.pool-name').textContent;
+                document.querySelector('#addLiquidityModal .modal-title').textContent = `Add to ${poolName} Pool`;
+                addLiquidityModal.classList.add('active');
+                document.body.style.overflow = 'hidden';
+            });
+        });
+        
+        // Earn Rewards buttons
+        const earnRewardsBtns = document.querySelectorAll('.earn-rewards-btn');
+        earnRewardsBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const poolName = btn.closest('.pool-card').querySelector('.pool-name').textContent;
+                document.querySelector('#earnRewardsModal .modal-title').textContent = `Earn from ${poolName}`;
+                earnRewardsModal.classList.add('active');
+                document.body.style.overflow = 'hidden';
+            });
+        });
+        
+        // Create Pool button
+        document.getElementById('createPoolBtn').addEventListener('click', () => {
+            createPoolModal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        });
+        
+        // Close modals
+        document.getElementById('closeAddLiquidityModal').addEventListener('click', () => {
+            addLiquidityModal.classList.remove('active');
+            document.body.style.overflow = 'auto';
+        });
+        
+        document.getElementById('closeEarnRewardsModal').addEventListener('click', () => {
+            earnRewardsModal.classList.remove('active');
+            document.body.style.overflow = 'auto';
+        });
+        
+        document.getElementById('closeCreatePoolModal').addEventListener('click', () => {
+            createPoolModal.classList.remove('active');
+            document.body.style.overflow = 'auto';
+        });
+        
+        // Cancel buttons
+        document.getElementById('cancelAddLiquidity').addEventListener('click', () => {
+            addLiquidityModal.classList.remove('active');
+            document.body.style.overflow = 'auto';
+        });
+        
+        document.getElementById('cancelEarnRewards').addEventListener('click', () => {
+            earnRewardsModal.classList.remove('active');
+            document.body.style.overflow = 'auto';
+        });
+        
+        document.getElementById('cancelCreatePool').addEventListener('click', () => {
+            createPoolModal.classList.remove('active');
+            document.body.style.overflow = 'auto';
+        });
+        
+        // Close modals when clicking outside
+        [addLiquidityModal, earnRewardsModal, createPoolModal].forEach(modal => {
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    modal.classList.remove('active');
+                    document.body.style.overflow = 'auto';
+                }
+            });
+        });
+        
+        // Close modals with Escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                [addLiquidityModal, earnRewardsModal, createPoolModal].forEach(modal => {
+                    modal.classList.remove('active');
+                    document.body.style.overflow = 'auto';
+                });
+            }
+        });
+    </script>
+</body>
+</html>
